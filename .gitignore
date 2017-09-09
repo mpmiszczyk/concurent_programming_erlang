@@ -3,3 +3,4 @@
 
 #Erlang bineris
 *.beam
+/erl_crash.dump
