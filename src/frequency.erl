@@ -31,14 +31,14 @@ deallocate(Freq, Freqs) ->
 init(ListOfFreqs) ->
   ?MODULE:loop({ListOfFreqs, self()}).
 
-loop({Freqs, Server}) ->
+loop({Frequencies, Server}) ->
   receive
     {allocate, Client, Ref} ->
-      {ok, Allocated, RemainingFreqs} = handle_allocate(Freqs),
+      {ok, Allocated, NewFrequencies} = handle_allocate(Frequencies),
       Client ! {ok, Allocated, Server, Ref},
-      ?MODULE:loop({RemainingFreqs, Server});
+      ?MODULE:loop({NewFrequencies, Server});
     {deallocate, Frequency} ->
-      {ok, NewFreqs} = handle_deallocate(Frequency, Freqs),
+      {ok, NewFreqs} = handle_deallocate(Frequency, Frequencies),
       ?MODULE:loop({NewFreqs, Server})
   end.
 
