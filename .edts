@@ -1,0 +1,6 @@
+:name "course"
+:node-sname "coursed@localhost"
+;; :lib-dirs '("_build/default/lib")
+;; :app-include-dirs '("include")
+;; :otp-path "~/.kerl/install/19.1"
+;; :start-command "./rebar3 shell"
