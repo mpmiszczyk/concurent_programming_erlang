@@ -3,7 +3,8 @@
 -export([
          start/1,
          allocate/1,
-         deallocate/2
+         deallocate/2,
+         deallocate/3
         ]).
 
 -export([
@@ -20,11 +21,18 @@ allocate(Freqs) ->
   Freqs ! {allocate, self(), Ref = make_ref()},
   receive
     {ok, Freq, Freqs, Ref} ->
-      {ok, Freq, Freqs}
+      {ok, Freq, Freqs};
+    {error, already_alocated_by, Client, Frequencies, Ref} ->
+      {error, already_alocated_by, Client, Frequencies}
+  after 2000 ->
+      timeout
   end.
 
 deallocate(Freq, Freqs) ->
-  Freqs ! {deallocate, Freq}.
+  deallocate(Freq, Freqs, self()).
+
+deallocate(Freq, Freqs, Client) ->
+  Freqs ! {deallocate, Freq, Client}.
 
 
 
@@ -34,23 +42,42 @@ init(ListOfFreqs) ->
 loop({Frequencies, Server}) ->
   receive
     {allocate, Client, Ref} ->
-      {ok, Allocated, NewFrequencies} = handle_allocate(Frequencies),
-      Client ! {ok, Allocated, Server, Ref},
-      ?MODULE:loop({NewFrequencies, Server});
-    {deallocate, Frequency} ->
-      {ok, NewFreqs} = handle_deallocate(Frequency, Frequencies),
+      case handle_allocate(Frequencies, Client) of
+        {ok, Allocated, NewFrequencies} ->
+          Client ! {ok, Allocated, Server, Ref},
+          ?MODULE:loop({NewFrequencies, Server});
+        {error, already_alocated_by, Client, Frequencie} ->
+          Client ! {error, already_alocated_by, Client, Frequencie, Ref},
+         ?MODULE:loop({Frequencies, Server})
+      end;
+
+    {deallocate, Frequency, Client} ->
+      {ok, NewFreqs} = handle_deallocate(Frequency, Client,  Frequencies),
       ?MODULE:loop({NewFreqs, Server})
   end.
 
-handle_allocate({ [FirstFree|RestOfFree],
-                  AllocatedFreqs} ) ->
-  {ok,
-   FirstFree,
-  {RestOfFree,
-   [FirstFree |AllocatedFreqs]}}.
+handle_allocate({[FirstFree|RestOfFree],
+                 AllocatedFreqs},
+                Client) ->
+  case alocated_before(Client, AllocatedFreqs) of
+    false ->
+      {ok,
+       FirstFree,
+       { RestOfFree,
+         [{Client, FirstFree} | AllocatedFreqs]}};
 
-handle_deallocate(Freq, {FreeFreqs,
-                          AllocatedFreqs}) ->
+    {Client, BeforeAlocated} ->
+      {error,
+       already_alocated_by,
+       Client,
+       BeforeAlocated}
+  end.
 
+
+alocated_before(Client, AllocatedFreqs) ->
+  lists:keyfind(Client, 1, AllocatedFreqs).
+
+handle_deallocate(Freq, Client, {FreeFreqs,
+                                 AllocatedFreqs}) ->
   {ok, { [Freq|FreeFreqs],
-         lists:delete(Freq, AllocatedFreqs)}}.
+         lists:delete({Client, Freq}, AllocatedFreqs)}}.
