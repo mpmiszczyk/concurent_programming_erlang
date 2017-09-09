@@ -29,7 +29,7 @@ deallocate(Freq, Freqs) ->
 
 
 init(ListOfFreqs) ->
-  ?MODULE:loop({ListOfFreqs, self()}).
+  ?MODULE:loop({{ListOfFreqs, []}, self()}).
 
 loop({Frequencies, Server}) ->
   receive
@@ -42,8 +42,15 @@ loop({Frequencies, Server}) ->
       ?MODULE:loop({NewFreqs, Server})
   end.
 
-handle_allocate(_Freqs = [First|Rest] ) ->
-  {ok, First, Rest}.
+handle_allocate({ [FirstFree|RestOfFree],
+                  AllocatedFreqs} ) ->
+  {ok,
+   FirstFree,
+  {RestOfFree,
+   [FirstFree |AllocatedFreqs]}}.
 
-handle_deallocate(Freq , Freqs) ->
-  {ok, [Freq|Freqs]}.
+handle_deallocate(Freq, {FreeFreqs,
+                          AllocatedFreqs}) ->
+
+  {ok, { [Freq|FreeFreqs],
+         lists:delete(Freq, AllocatedFreqs)}}.
