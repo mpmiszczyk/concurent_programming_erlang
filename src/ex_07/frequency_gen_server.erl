@@ -6,27 +6,20 @@
 %%   http://www.erlangprogramming.org/
 %%   (c) Francesco Cesarini and Simon Thompson
 
--module(gf).
+-module(frequency).
 -behaviour(gen_server).
 
-
+												% an implementation of this is included.
 -export([start_link/0]).
 
+												% you need to implement these functions.
+-export([init/1, handle_call/3, handle_cast/2]).
 
--export([init/1,
-		 handle_call/3,
-		 handle_cast/2]).
+												% these are implemented for you.
+-export([handle_info/2, terminate/2, code_change/3]).
 
--export([handle_info/2,
-		 terminate/2,
-		 code_change/3]).
-
--export([allocate/0,
-		 deallocate/1,
-		 stop/0]).
-
--define(SERVER, ?MODULE).
-
+												% you will need to implement these.
+-export([allocate/0,deallocate/1,stop/0]).
 
 %% These are the start functions used to create and
 %% initialize the server.
@@ -46,22 +39,24 @@ get_frequencies() -> [10,11,12,13,14,15].
 %% Functional interface
 
 allocate() ->
-	gen_server:call(?SERVER, allocate).
+	gen_server:call(?MODULE,allocate).
 
 deallocate(Freq) ->
-	gen_server:cast(?SERVER, {deallocate, Freq}).
+	gen_server:cast(?MODULE,{deallocate,Freq}).
 
 stop() ->
-	gen_server:stop(?SERVER).
+	gen_server:cast(?MODULE,stop).
 
-handle_call(allocate, From, Freqs) ->
-	{NewFreq, Response} = allocate(Freqs, From),
-	{reply, Response, NewFreq }.
+handle_call(allocate, From, State) ->
+	{NewState, Reply} = allocate(State,From),
+	{reply, Reply, NewState}.
 
+handle_cast({deallocate,Freq}, State) ->
+	NewState = deallocate(State,Freq),
+	{noreply, NewState};
 
-handle_cast({deallocate, Freq}, Freqs) ->
-	NewFreqs = deallocate(Freqs, Freq),
-	{noreply, NewFreqs}.
+handle_cast(stop, State) ->
+	{stop,stopped,State}.
 
 
 %% The Internal Help Functions used to allocate and
@@ -76,6 +71,8 @@ deallocate({Free, Allocated}, Freq) ->
 	NewAllocated=lists:keydelete(Freq, 1, Allocated),
 	{[Freq|Free],  NewAllocated}.
 
+
+												% default implementations
 
 handle_info(_Info, State) ->
 	{noreply, State}.
