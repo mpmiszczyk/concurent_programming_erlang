@@ -11,8 +11,6 @@
 -export([start/0,allocate/0,deallocate/1,stop/0]).
 -export([init/0]).
 
--define(SERVER, frequency).
-
 %% These are the start functions used to create and
 %% initialize the server.
 
