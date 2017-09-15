@@ -7,16 +7,18 @@
 %%   http://www.erlangprogramming.org/
 %%   (c) Francesco Cesarini and Simon Thompson
 
--module(frequency).
+-module(frequency2).
 -export([start/0,allocate/0,deallocate/1,stop/0]).
 -export([init/0]).
+
+-define(SERVER, frequency).
 
 %% These are the start functions used to create and
 %% initialize the server.
 
 start() ->
-    register(frequency,
-			 spawn(frequency, init, [])).
+    register(?SERVER,
+			 spawn(?MODULE, init, [])).
 
 init() ->
 	Frequencies = {get_frequencies(), []},
@@ -44,19 +46,19 @@ loop(Frequencies) ->
 %% Functional interface
 
 allocate() -> 
-	frequency ! {request, self(), allocate},
+	?SERVER ! {request, self(), allocate},
 	receive 
 	    {reply, Reply} -> Reply
     end.
 
 deallocate(Freq) -> 
-    frequency ! {request, self(), {deallocate, Freq}},
+    ?SERVER ! {request, self(), {deallocate, Freq}},
     receive 
 	    {reply, Reply} -> Reply
     end.
 
 stop() -> 
-    frequency ! {request, self(), stop},
+    ?SERVER ! {request, self(), stop},
     receive 
 	    {reply, Reply} -> Reply
     end.
